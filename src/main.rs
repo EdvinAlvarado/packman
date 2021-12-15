@@ -1,8 +1,9 @@
 mod program;
 use program::Program;
+use std::io::ErrorKind;
 
 
-fn main() -> Result<(), i32>{
+fn main() -> Result<(), ErrorKind>{
     let mut program = Program::new();
     for (i, ar) in std::env::args().enumerate() {
         match i {
@@ -10,7 +11,7 @@ fn main() -> Result<(), i32>{
             1 => {
                 match &ar.as_str()[..2] {
                     "-S"    => {program.function = 'S'; program.parameters = ar.as_str()[2..].to_string();}
-                    _       => {return Err(1);}
+                    _       => {return Err(ErrorKind::InvalidInput);}
                 }
             },
             _ => {program.packages.push(ar);}

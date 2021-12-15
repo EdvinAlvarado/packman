@@ -23,26 +23,30 @@ impl Program {
             packages: Vec::new(),
         }
     }
-    pub fn run(&self) -> Result<(), i32>{
+    pub fn run(&self) -> Result<(), io::ErrorKind>{
         match self.function {
             'S' => self.sync(),
             _   => self.man(),
         }
     }
-    pub fn man(&self) -> Result<(), i32> {
+    pub fn man(&self) -> Result<(), io::ErrorKind> {
         // TODO
         Ok(())
     }
-    pub fn sync(&self) -> Result<(), i32> {
+    pub fn sync(&self) -> Result<(), io::ErrorKind> {
         for c in self.parameters.chars() {
             match c {
                 'd' => {return self.download();},
-                _   => {return Err(Status::WrongParameters as i32);},
+                _   => {return self.install();},
             }
         }
         Ok(())
     }
-    fn download(&self) -> Result<(), i32> {
+    fn install(&self) -> Result<(), io::ErrorKind> {
+        // TODO
+        Ok(())
+    }
+    fn download(&self) -> Result<(), io::ErrorKind> {
         for package in self.packages.iter() {
             // println!("{}", package);
             let pkgbuild = pkgbuild_parser(format!("/home/edvin/mnt/lfs/sources/{}.pkgbuild", package));
@@ -76,7 +80,7 @@ impl Program {
                         if answer.contains("y") {
                             break;
                         } else if answer.contains("n"){
-                            return Err(Status::DownloadFailed as i32);
+                            return Err(io::ErrorKind::InvalidData);
                         }
                     }
                 }
@@ -90,7 +94,7 @@ impl Program {
                         if answer.contains("y") {
                             break;
                         } else if answer.contains("n"){
-                            return Err(Status::DownloadFailed as i32);
+                            return Err(io::ErrorKind::InvalidData);
                         }
                     }
                 }         
