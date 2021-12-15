@@ -1,9 +1,10 @@
 use std::process::Command;
 use std::fs::File;
 use std::path::Path;
-use std::io::{prelude::*, BufReader};
+use std::io;
 use regex::Regex;
 use std::collections::HashMap;
+extern crate reqwest;
 
 enum Status {WrongParameters=1, DownloadFailed}
 
@@ -53,23 +54,25 @@ impl Program {
                             .unwrap()
                             .as_str();
             
-            if !Path::new(format!("/home/edvin/mnt/lfs/var/cache/packman/pkg/{}", tarfile).as_str()).exists() {
-                let mut wget = Command::new("wget")
-                    .arg(&pkgbuild["source"])
-                    .arg("-P")
-                    .arg("/home/edvin/mnt/lfs/var/cache/packman/pkg/")
-                    .spawn()
-                    .unwrap();
-                wget.wait().expect("downloading file failed. Do you have internet? Is the URL correct?");
+            let tarpath_string = format!("/home/edvin/mnt/lfs/var/cache/packman/pkg/{}", tarfile);
+            let tarpath = Path::new(tarpath_string.as_str());
+            if !tarpath.exists() {
+                let response = reqwest::blocking::get(&pkgbuild["source"]).expect("Download Failed").bytes().expect("download to bytes failed");
+                let mut content = response.as_ref();
+                let mut file = match File::create(&tarpath) {
+                    Err(why) => panic!("Tar file could not be created: {}", why),
+                    Ok(file) => file,
+                };
+                io::copy(&mut content, &mut file).expect("failed to download to tar path");
             }
 
             if pkgbuild["md5sums"] != "" {
-                if checksum("md5sum", tarfile) != pkgbuild["md5sums"] {
+                if checksum("md5sum", tarpath) != pkgbuild["md5sums"] {
                     println!("md5sum failed: {}", tarfile);
                     loop {
                         print!("Continue? [y/n]");
                         let mut answer = String::new();
-                        let _stdin = std::io::stdin().read_line(&mut answer).unwrap();
+                        let _stdin = io::stdin().read_line(&mut answer).unwrap();
                         if answer.contains("y") {
                             break;
                         } else if answer.contains("n"){
@@ -78,7 +81,7 @@ impl Program {
                     }
                 }
             } else if pkgbuild["sha256sums"] != "" {
-                if checksum("sha256sum", tarfile) != pkgbuild["sha256sums"] {
+                if checksum("sha256sum", tarpath) != pkgbuild["sha256sums"] {
                     println!("sha256sum failed: {}", tarfile);
                     loop {
                         print!("Continue? [y/n]");
@@ -98,11 +101,12 @@ impl Program {
 
 }
 
-fn checksum(checksum: &'static str, tarfile: &str) -> String {
+fn checksum(checksum: &'static str, tarfile: &Path) -> String {
                 let md5_output = Command::new(checksum)
-                    .arg(format!("/home/edvin/mnt/lfs/var/cache/packman/pkg/{}", tarfile))
+                    .arg(tarfile)
                     .output()
                     .expect(format!("{} error", checksum).as_str());
+                // stdout = "<checksum> <file>"
                 return std::str::from_utf8(&md5_output.stdout).unwrap().split(' ').nth(0).unwrap().to_string();
                 // println!("Compare:\n{}\n{}",md5,pkgbuild["md5sums"]);
 }
