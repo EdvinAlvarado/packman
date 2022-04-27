@@ -1,0 +1,30 @@
+[package]
+name = "acl"
+version = "2.3.1"
+release = 1
+description = "acl file"
+arch = ["any"]
+licenses = []
+url = "https://savannah.nongnu.org/projects/acl"
+
+[source]
+md5sums = ["95ce715fe09acca7c12d3306d0f076b2"]
+sources = ["https://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.tar.xz"]
+
+[depends]
+
+
+[depends.makedepends]
+
+[depends.optdepends]
+
+
+[relations]
+provides = []
+conflicts = []
+replaces = []
+
+
+[others]
+backup = []
+install = ""

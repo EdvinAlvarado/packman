@@ -1,4 +1,5 @@
 mod program;
+mod package;
 use program::Program;
 use std::io::ErrorKind;
 
