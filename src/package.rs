@@ -78,7 +78,7 @@ impl std::fmt::Display for PackageError {
 
 static SOURCES_PATH: &str = "~/mnt/lfs/sources";
 static PKGS_PATH: &str = "~/mnt/lfs/var/cache/packman/pkg";
-static TEMP_PATH: &str = "~/mnt/lfs/tmp";
+static BUILD_PATH: &str = "~/mnt/lfs/var/cache/packman/build";
 
 impl PackageBuild {
     pub fn new<P: AsRef<Path>>(file: P) -> Result<PackageBuild, Box<dyn Error>> {
@@ -110,26 +110,21 @@ impl PackageBuild {
         let mut out = fs::File::create(to).expect("coudldn't create temp tarfile");
         io::copy(&mut resp, &mut out).expect("fail to download tarfile");
     }
+    // Downloads all the files of the Package source and returns a list of the files
     pub fn download(&self) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         let mut files: Vec<PathBuf> = Vec::new();
+        let mut bld_path= PathBuf::new();
+        bld_path.push(BUILD_PATH);
+        bld_path.push(self.package.name);
         for source in &self.source.sources {
-            let mut pkg = PathBuf::new();
-            pkg.push(PKGS_PATH);
-            let mut tmp= PathBuf::new();
-            tmp.push(TEMP_PATH);
+            let mut file = bld_path.clone();
 
             let filename = source.split("/").last().ok_or(PackageError::SourceLinkError)?;
-            pkg.push(filename);
-            tmp.push(filename);
+            file.push(filename);
 
-            let file = match (pkg.exists(), tmp.exists()) {
-                (false, true) => tmp,
-                (false, false) => {
-                    PackageBuild::download_file(source, &tmp);
-                    tmp
-                },
-                (true, _) => pkg,
-            };
+            if !file.exists() {
+                    PackageBuild::download_file(source, &file);
+            }
             files.push(file);
         }
         Ok(files)
